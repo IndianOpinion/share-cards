@@ -40,7 +40,7 @@ Measured result (one site, one week of featured images): about 90% of
 featured images were already at least 1200 px wide and close to 16:9 and are
 used as they are; the other 10% (one was 1200 by 152) and every category and
 tag page now get their own card instead of one shared placeholder that had
-served thousands of tag pages. Rendering on request instead of at publish
+served every tag page. Rendering on request instead of at publish
 avoided about 1,700 renders a day for posts nobody shared.
 
 ## 2. Goals and non-goals
@@ -228,7 +228,8 @@ theme code. It handles `GET` and `HEAD` only; any other method gets 405.
 - **C22. Stale hash.** Valid key, subject public, hash differs from the
   current fingerprint (an old URL from a cached page or a social cache).
   Response 302 to the current card URL, `Cache-Control: public,
-  max-age=300`. Nothing is rendered for the stale hash. Only current
+  max-age=300`, and `X-Share-Card: stale`. Nothing is rendered for the stale
+  hash. Only current
   hashes are ever written to disk, so random hashes cannot fill the cache.
 - **C23. Malformed key.** Anything that does not match the pattern (upper
   case, leading zero, extra path segments, dots, encoded slashes, missing
@@ -247,13 +248,13 @@ theme code. It handles `GET` and `HEAD` only; any other method gets 405.
 - **C26. Render failure.** The backdrop fails to load: the card renders
   without it (fails open). The whole render fails (font unreadable, write
   error, renderer exception): the error is logged with the key, a failure
-  marker is written for that key, and the response is the fallback (C29
-  redirect rules) with `X-Share-Card: fallback-error`.
+  marker is written for that key, and the response is the fallback response (defined after
+  C27) with `X-Share-Card: fallback-error`.
 - **C27. Failure marker active.** A key with an unexpired failure marker
   (default 600 seconds) is not rendered again. The fallback is served at
   once. A broken source cannot cost a render on every request.
 
-Fallback response, used by C26, C27, C29, C30, C31 and C66: 302 to the
+Fallback response, used by C26, C27, C29, C30, C31, C66 and C67: 302 to the
 fallback URL with `Cache-Control: public, max-age=60` and `X-Share-Card:
 fallback-{reason}`. Fallback URL: the post's featured image (largest size)
 for a post; else the default image; else 404 with the C24 headers. An image
@@ -524,7 +525,7 @@ cleared on settings save.
 
 ### 4.9 Output file
 
-- **C69. Format.** 1200 by 630, baseline sRGB JPEG, progressive, no
+- **C69. Format.** 1200 by 630, progressive sRGB JPEG, no
   metadata, quality `jpeg_quality` (default 82, allowed 60 to 95). If the
   file exceeds 300 KB, re-encode at 10 lower until it fits or quality 60.
   Never WebP, AVIF or PNG.
@@ -727,6 +728,7 @@ in 0.1.0 is open question 1.
 | `max_source_bytes` | 20971520 | C59 |
 | `max_source_pixels` | 25000000 | C59 |
 | `cache_max_mb` | 512 | C42 |
+| `log_level` | `error` | `error`, `info`, `debug`; section 11 |
 
 Default layout (in the template array, all overridable): padding 70; kicker
 baseline 96, size 30; headline box top 150, height 340; footer baseline 572,
