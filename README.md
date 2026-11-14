@@ -21,6 +21,7 @@ This project came out of the work on indianopinion.org and is written from scrat
 - [Limitations](#limitations)
 - [FAQ](#faq)
 - [Licence](#licence)
+- [Contributing](#contributing)
 
 ## Requirements
 
@@ -349,3 +350,7 @@ wp share-cards flush --yes                                # delete every cached 
 ## Licence
 
 MIT. See [LICENSE](LICENSE). Copyright (c) 2026 Indian Opinion.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests and style.
