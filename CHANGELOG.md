@@ -24,7 +24,8 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   image, atomic writes.
 - GD and Imagick renderers sharing one layout, and a Pango text layer for
   complex scripts. Scripts that cannot be shaped or have no font are left off,
-  never drawn broken.
+  never drawn broken. Text reaches Pango literally: markup, ImageMagick `%`
+  escapes and backslash escapes are neutralised.
 - Backdrops from the featured image: intermediate size choice, byte, pixel and
   memory caps, CMYK, SVG and truncated JPEG refusal, transparency over the
   background, focal point, darkening and scrim.

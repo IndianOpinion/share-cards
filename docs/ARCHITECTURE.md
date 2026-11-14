@@ -215,7 +215,10 @@ fires `share_cards_purged`. The daily `share_cards_gc` event runs
   fixed from the `getimagesize` type (JPEG, PNG, GIF, WebP), so a file can
   never be interpreted as SVG, MVG or MSL.
 - **Pango positioning and escaping.** Text is escaped twice for the Pango
-  path (rule 14.14), tested with `&` and `<`. The paragraph uses
+  path (rule 14.14), tested with `&` and `<`. ImageMagick also expands its
+  own `%` escapes (`%m`, `%[fx:...]`) and backslash escapes in `pango:` text,
+  so every `%` and `\` in the markup is doubled before the read: a headline
+  is drawn as written and never evaluated. The paragraph uses
   `pango:wrap=word-char` at the box width; `pango:align=left` is the natural
   start edge, so right-to-left text comes out right-aligned. Single-line
   fields use `pango:ellipsize=end`. Pango picks fonts by family, so a mapped
@@ -263,7 +266,10 @@ fires `share_cards_purged`. The daily `share_cards_gc` event runs
 - **Stored data** beyond PRD 5.6: option `share_cards_previous_prefix`,
   transients `share_cards_flush_guard` and `share_cards_notice_{user}`, file
   `.budget`. Uninstall removes all of them (per-user notices expire within a
-  minute).
+  minute). On multisite, uninstall switches to each site in turn; there it
+  deletes the stored `rewrite_rules` instead of flushing, because after
+  `switch_to_blog()` the global rewrite object still holds the first site's
+  rules. WordPress rebuilds each site's rules on its next request.
 
 ## Testing
 

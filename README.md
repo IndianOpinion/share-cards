@@ -60,7 +60,7 @@ Copy [`examples/mu-plugin-loader.php`](examples/mu-plugin-loader.php) to `wp-con
 require_once WP_CONTENT_DIR . '/plugins/share-cards/share-cards.php';
 ```
 
-Must-use plugins get no activation hook. Defaults apply until the settings page is saved, the daily clean-up is scheduled on the first request, and the rewrite rule is flushed once on the first admin page load.
+Must-use plugins get no activation hook. The defaults are stored and the daily clean-up is scheduled on the first request, and the rewrite rule is flushed once on the first page load in wp-admin by an administrator.
 
 ## Quick start
 
@@ -332,7 +332,7 @@ wp share-cards flush --yes                                # delete every cached 
 
 **The card URL returns the featured image instead of a card.** Look at `X-Share-Card`. `fallback-busy` or `fallback-slots` means renders were queued; the next request gets the card. `fallback-budget` means more than `renders_per_minute` cards started this minute. `fallback-error` means the render failed; the reason is in the PHP error log and it is retried after `failure_ttl` seconds.
 
-**Card URLs return the WordPress 404 page.** The rewrite rule is missing. Site Health says so; visit any admin page (the plugin flushes once) or save **Settings, Permalinks**.
+**Card URLs return the WordPress 404 page.** The rewrite rule is missing. Site Health says so; visit any admin page as an administrator (the plugin flushes once an hour at most) or save **Settings, Permalinks**.
 
 **I changed the colours and old cards still show on social platforms.** Platforms cache images by URL. New page views advertise the new URL; ask the platform to re-scrape the page (for example the Facebook Sharing Debugger) to pick it up sooner.
 
