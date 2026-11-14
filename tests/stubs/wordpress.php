@@ -42,6 +42,31 @@ final class WpStub
     public static array $privateTaxonomies = [];
     public static int $userId = 1;
     public static int $now = 1767225600;
+    /**
+     * Multisite: per-site state, saved while another site is current. Empty
+     * means a single site.
+     *
+     * @var array<int, array{options: array<string, mixed>, transients: array<string, array{0: mixed, 1: int}>, cron: array<string, int>, uploadsBase: string}>
+     */
+    public static array $sites = [];
+    public static int $blogId = 1;
+    /** @var list<int> */
+    public static array $blogStack = [];
+
+    public static function saveSite(): void
+    {
+        self::$sites[self::$blogId] = ['options' => self::$options, 'transients' => self::$transients, 'cron' => self::$cron, 'uploadsBase' => self::$uploadsBase];
+    }
+
+    public static function loadSite(int $id): void
+    {
+        self::$blogId = $id;
+        $site = self::$sites[$id] ?? ['options' => [], 'transients' => [], 'cron' => [], 'uploadsBase' => ''];
+        self::$options = $site['options'];
+        self::$transients = $site['transients'];
+        self::$cron = $site['cron'];
+        self::$uploadsBase = $site['uploadsBase'];
+    }
 
     public static function reset(): void
     {
@@ -65,6 +90,9 @@ final class WpStub
         self::$cron = [];
         self::$privateTypes = [];
         self::$privateTaxonomies = [];
+        self::$sites = [];
+        self::$blogId = 1;
+        self::$blogStack = [];
         WP_CLI::$out = [];
         WP_CLI::$commands = [];
     }
@@ -566,7 +594,44 @@ function add_options_page(string $title, string $menu, string $cap, string $slug
 
 function is_multisite(): bool
 {
-    return false;
+    return WpStub::$sites !== [];
+}
+
+/**
+ * @param array<string, mixed> $args
+ * @return list<int>
+ */
+function get_sites(array $args = []): array
+{
+    return array_keys(WpStub::$sites);
+}
+
+function get_current_blog_id(): int
+{
+    return WpStub::$blogId;
+}
+
+function switch_to_blog(int $id): bool
+{
+    WpStub::saveSite();
+    WpStub::$blogStack[] = WpStub::$blogId;
+    WpStub::loadSite($id);
+    return true;
+}
+
+function restore_current_blog(): bool
+{
+    if (WpStub::$blogStack === []) {
+        return false;
+    }
+    WpStub::saveSite();
+    WpStub::loadSite((int) array_pop(WpStub::$blogStack));
+    return true;
+}
+
+function ms_is_switched(): bool
+{
+    return WpStub::$blogStack !== [];
 }
 
 function __return_true(): bool

@@ -114,6 +114,47 @@ final class LifecycleTest extends TestCase
         self::assertDirectoryDoesNotExist($dir);
     }
 
+    public function testT78UninstallOnMultisiteCleansEverySite(): void
+    {
+        // Site 1 is current; site 2 has its own uploads, options and cron.
+        $this->plugin->activate();
+        file_put_contents($this->cacheDir() . '/post-1-0123456789.jpg', 'x');
+        WpStub::$options['rewrite_rules'] = ['site-one' => 'index.php'];
+        $second = $this->tmp . '/uploads-2';
+        mkdir($second . '/share-cards/.locks', 0755, true);
+        file_put_contents($second . '/share-cards/term-7-abcdef0123.jpg', 'x');
+        file_put_contents($second . '/share-cards/index.html', '');
+        touch($second . '/share-cards/.locks/slot-1.lock');
+        WpStub::saveSite();
+        WpStub::$sites[2] = [
+            'options' => [Settings::OPTION => ['url_prefix' => 'cards'], 'permalink_structure' => '/%year%/%postname%/', 'rewrite_rules' => ['site-two' => 'index.php']],
+            'transients' => [Capabilities::TRANSIENT => [['gd' => true], 0]],
+            'cron' => [Plugin::CRON_HOOK => 1],
+            'uploadsBase' => $second,
+        ];
+        $flushes = WpStub::$flushes;
+
+        if (!defined('WP_UNINSTALL_PLUGIN')) {
+            define('WP_UNINSTALL_PLUGIN', 'share-cards/share-cards.php');
+        }
+        require dirname(__DIR__) . '/uninstall.php';
+
+        self::assertSame(1, WpStub::$blogId, 'the original site is current again');
+        self::assertDirectoryDoesNotExist($this->cacheDir());
+        self::assertDirectoryDoesNotExist($second . '/share-cards');
+        WpStub::saveSite();
+        foreach ([1, 2] as $id) {
+            $site = WpStub::$sites[$id];
+            self::assertArrayNotHasKey(Settings::OPTION, $site['options'], "site $id");
+            self::assertArrayNotHasKey(Capabilities::TRANSIENT, $site['transients'], "site $id");
+            self::assertArrayNotHasKey(Plugin::CRON_HOOK, $site['cron'], "site $id");
+            // Never another site's rules: the stored rules are dropped and
+            // rebuilt by WordPress on that site's next request.
+            self::assertArrayNotHasKey('rewrite_rules', $site['options'], "site $id");
+        }
+        self::assertSame($flushes, WpStub::$flushes, 'no flush while switched');
+    }
+
     public function testBootRegistersHooks(): void
     {
         WpStub::$isAdmin = true;

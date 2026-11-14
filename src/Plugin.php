@@ -410,8 +410,15 @@ final class Plugin
         }
     }
 
+    /**
+     * `admin_init` also runs for admin-ajax.php and admin-post.php, which
+     * anyone can request, so only an administrator's page load repairs.
+     */
     public function onAdminInit(): void
     {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
         $this->rewrite()->repairIfMissing();
     }
 
@@ -501,7 +508,15 @@ final class Plugin
         delete_transient(Rewrite::FLUSH_GUARD);
         wp_clear_scheduled_hook(self::CRON_HOOK);
         self::removeOwnFiles($this->cache(), true);
-        flush_rewrite_rules(false);
+        if (is_multisite() && ms_is_switched()) {
+            // After switch_to_blog() the global rewrite object still holds the
+            // first site's permalink structure and rules, so a flush here would
+            // store them for this site. Deleting the stored rules makes
+            // WordPress rebuild this site's own rules on its next request.
+            delete_option('rewrite_rules');
+        } else {
+            flush_rewrite_rules(false);
+        }
     }
 
     /**

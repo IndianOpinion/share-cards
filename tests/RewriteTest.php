@@ -32,6 +32,12 @@ final class RewriteTest extends TestCase
         // Another plugin flushed before ours registered: rule missing.
         WpStub::$options['rewrite_rules'] = ['^other$' => 'index.php'];
         self::assertSame('recommended', (new SiteHealth($this->plugin))->result('rewrite')['status']);
+        // A visitor reaching admin_init (admin-ajax.php) never flushes.
+        WpStub::$canManage = false;
+        $this->plugin->onAdminInit();
+        self::assertSame(0, WpStub::$flushes);
+        self::assertFalse(get_transient(Rewrite::FLUSH_GUARD));
+        WpStub::$canManage = true;
         $this->plugin->onAdminInit();
         self::assertSame(1, WpStub::$flushes);
         self::assertTrue($this->plugin->rewrite()->rulePresent());
