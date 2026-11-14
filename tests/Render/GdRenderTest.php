@@ -114,6 +114,25 @@ final class GdRenderTest extends RenderTestCase
         self::assertGreaterThan(200, $this->headlineInk($out));
     }
 
+    public function testPangoTextIsNeverInterpretedByImageMagick(): void
+    {
+        if (!\IndianOpinion\ShareCards\PangoTextLayer::isAvailable()) {
+            self::markTestSkipped('ImageMagick has no Pango format here.');
+        }
+        $font = $this->requireFont('/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf');
+        $pango = new \IndianOpinion\ShareCards\PangoTextLayer();
+        $line = static fn (string $text): int => (int) $pango->line($text, $font, 30, 1100, '#ffffff', false)?->width;
+        $height = static fn (string $text): int => (int) $pango->paragraph($text, $font, [30], 1100, 600, '#ffffff', false)?->height;
+
+        // `%[fx:1+1]` would be evaluated to "2", `%m` would become "PANGO".
+        self::assertGreaterThan(3 * $line('2'), $line('%[fx:1+1]'));
+        self::assertNotSame($line('PANGO'), $line('%m'));
+        self::assertGreaterThan($line('%m'), $line('%%m'));
+        // A literal backslash-n stays on one line.
+        self::assertSame($height('ab'), $height('a\\nb'));
+        self::assertSame("50%% \\\\n", \IndianOpinion\ShareCards\PangoTextLayer::literal('50% \\n'));
+    }
+
     public function testT49HindiWithoutShapingIsOmitted(): void
     {
         $font = $this->requireFont('/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf');

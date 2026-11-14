@@ -14,6 +14,11 @@ namespace IndianOpinion\ShareCards;
  * Text is escaped twice: ImageMagick decodes one level of entities before
  * Pango parses the markup, so text escaped once would reach Pango with a
  * bare `&` or `<`, Pango would reject the markup and the text would vanish.
+ *
+ * ImageMagick also expands its own escapes in the `pango:` text before
+ * Pango sees it: `%` escapes (`%m`, `%[fx:...]`, `%[option:...]`) and
+ * backslash escapes (`\n`). Every `%` and `\` is doubled, so a headline
+ * is always drawn as written and never evaluated.
  */
 final class PangoTextLayer
 {
@@ -38,6 +43,15 @@ final class PangoTextLayer
     {
         $once = htmlspecialchars($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
         return htmlspecialchars($once, ENT_QUOTES | ENT_XML1, 'UTF-8');
+    }
+
+    /**
+     * Doubles ImageMagick's escape characters, so the `pango:` coder reads
+     * the markup literally.
+     */
+    public static function literal(string $markup): string
+    {
+        return str_replace(['\\', '%'], ['\\\\', '%%'], $markup);
     }
 
     /**
@@ -120,7 +134,7 @@ final class PangoTextLayer
             if ($width > 0) {
                 $im->setSize($width, 0);
             }
-            $im->readImage('pango:' . $markup);
+            $im->readImage('pango:' . self::literal($markup));
             $im->setImageFormat('png');
             return new PangoResult($im->getImageBlob(), $im->getImageWidth(), $im->getImageHeight(), $sizePx);
         } catch (\ImagickException $e) {
