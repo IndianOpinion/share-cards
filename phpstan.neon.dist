@@ -1,0 +1,15 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - share-cards.php
+        - uninstall.php
+        - autoload.php
+    scanFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    # WordPress return types in the stubs are wider in practice than their
+    # PHPDoc says (filters can return anything), so defensive checks stay.
+    treatPhpDocTypesAsCertain: false

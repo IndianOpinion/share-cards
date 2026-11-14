@@ -1,0 +1,15 @@
+# Serve cards straight from the cache directory when the file exists. Place
+# above the "# BEGIN WordPress" block in the site's .htaccess. Adjust the
+# prefix and the path to your uploads.
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{DOCUMENT_ROOT}/wp-content/uploads/share-cards/$1 -f
+RewriteRule ^share-card/([a-z][a-z0-9]{0,15}-[1-9][0-9]{0,19}-[0-9a-f]{10}\.jpg)$ wp-content/uploads/share-cards/$1 [L,E=SHARE_CARD:1]
+</IfModule>
+
+<IfModule mod_headers.c>
+Header always set Cache-Control "public, max-age=31536000, immutable" env=REDIRECT_SHARE_CARD
+Header always set X-Content-Type-Options "nosniff" env=REDIRECT_SHARE_CARD
+Header always set X-Share-Card "static" env=REDIRECT_SHARE_CARD
+</IfModule>

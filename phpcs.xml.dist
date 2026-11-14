@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<ruleset name="share-cards">
+    <description>PSR-12 for the plugin and its tests.</description>
+    <file>src</file>
+    <file>tests</file>
+    <file>examples</file>
+    <file>share-cards.php</file>
+    <file>uninstall.php</file>
+    <file>autoload.php</file>
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <rule ref="PSR12">
+        <!-- Lines hold long sprintf and regex literals; readability wins over a hard cut. -->
+        <exclude name="Generic.Files.LineLength"/>
+    </rule>
+    <!-- Bootstrap files declare constants or functions as well as running code. -->
+    <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
+        <exclude-pattern>share-cards.php</exclude-pattern>
+        <exclude-pattern>autoload.php</exclude-pattern>
+        <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+        <exclude-pattern>tests/phpstan-bootstrap.php</exclude-pattern>
+        <exclude-pattern>examples/*</exclude-pattern>
+    </rule>
+    <!-- The stub layer mirrors WordPress names and puts several classes in one file. -->
+    <rule ref="PSR1.Classes.ClassDeclaration.MultipleClasses">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+    </rule>
+    <rule ref="PSR1.Classes.ClassDeclaration.MissingNamespace">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+    </rule>
+    <rule ref="Squiz.Classes.ValidClassName.NotCamelCaps">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+    </rule>
+    <rule ref="PSR1.Methods.CamelCapsMethodName.NotCamelCaps">
+        <exclude-pattern>tests/stubs/*</exclude-pattern>
+        <exclude-pattern>tests/HeadTagsTest.php</exclude-pattern>
+    </rule>
+</ruleset>
