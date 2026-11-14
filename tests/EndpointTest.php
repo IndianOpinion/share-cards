@@ -270,6 +270,90 @@ final class EndpointTest extends TestCase
         self::assertContains('hit', [$r->header('X-Share-Card'), substr($child, 4)]);
     }
 
+    public function testT28StampedeOfEightProcessesRendersOnce(): void
+    {
+        $counterFile = $this->tmp . '/renders.txt';
+        $slow = new CountingRenderer(null, false, $counterFile);
+        $slow->during = static fn () => usleep(300000);
+        remove_all_filters('share_cards_renderer');
+        add_filter('share_cards_renderer', static fn (): Renderer => $slow);
+        $this->plugin = new \IndianOpinion\ShareCards\Plugin(null, function (string $l): void {
+            $this->logs[] = $l;
+        });
+        \IndianOpinion\ShareCards\Plugin::setInstance($this->plugin);
+        $key = $this->key();
+
+        $out = $this->inProcesses(8, function () use ($key): string {
+            $r = $this->plugin->endpoint()->handle($key->toString(), 'GET');
+            return $r->status . ' ' . $r->header('X-Share-Card');
+        });
+        sort($out);
+        self::assertSame(['200 hit', '200 hit', '200 hit', '200 hit', '200 hit', '200 hit', '200 hit', '200 render'], $out);
+        self::assertSame(1, substr_count((string) file_get_contents($counterFile), "\n"), 'exactly one render');
+        self::assertSame([], glob($this->cacheDir() . '/.*.tmp') ?: [], 'no temporary file left');
+    }
+
+    public function testT31BudgetHoldsAcrossProcesses(): void
+    {
+        // Stay inside one wall-clock minute for the whole test.
+        $second = (int) date('s');
+        if ($second > 50) {
+            sleep(61 - $second);
+        }
+        $path = $this->tmp . '/.budget';
+        $out = $this->inProcesses(8, static function () use ($path): string {
+            $budget = new RenderBudget($path, 10);
+            $started = 0;
+            for ($i = 0; $i < 5; $i++) {
+                $started += $budget->tryStart() ? 1 : 0;
+            }
+            return (string) $started;
+        });
+        self::assertSame(10, array_sum(array_map('intval', $out)), 'exactly the budget, across 40 attempts in 8 processes');
+        self::assertSame(10, (new RenderBudget($path, 10))->current());
+    }
+
+    /**
+     * Runs `$work` in `$n` forked processes that start together, and returns
+     * what each returned.
+     *
+     * @param callable(): string $work
+     * @return list<string>
+     */
+    private function inProcesses(int $n, callable $work): array
+    {
+        if (!function_exists('pcntl_fork') || !function_exists('posix_kill')) {
+            self::markTestSkipped('pcntl and posix are needed.');
+        }
+        $go = $this->tmp . '/go';
+        $pids = [];
+        for ($i = 0; $i < $n; $i++) {
+            $pid = pcntl_fork();
+            if ($pid === -1) {
+                self::fail('fork failed');
+            }
+            if ($pid === 0) {
+                while (!is_file($go)) {
+                    usleep(1000);
+                    clearstatcache(true, $go);
+                }
+                file_put_contents($this->tmp . '/out-' . $i . '.txt', $work());
+                // Leave without running PHPUnit's shutdown in the child.
+                posix_kill(getmypid(), SIGKILL);
+            }
+            $pids[] = $pid;
+        }
+        touch($go);
+        foreach ($pids as $pid) {
+            pcntl_waitpid($pid, $status);
+        }
+        $out = [];
+        for ($i = 0; $i < $n; $i++) {
+            $out[] = (string) file_get_contents($this->tmp . '/out-' . $i . '.txt');
+        }
+        return $out;
+    }
+
     public function testT29WaiterTimesOut(): void
     {
         $key = $this->key();
