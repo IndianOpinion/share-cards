@@ -34,6 +34,9 @@ final class GdCanvas implements Canvas
 
     public function create(int $width, int $height, string $background): void
     {
+        if ($width < 1 || $height < 1) {
+            throw new RenderException('The canvas must be at least 1 by 1 pixel.');
+        }
         $image = imagecreatetruecolor($width, $height);
         if ($image === false) {
             throw new RenderException('GD could not allocate the canvas.');
@@ -194,7 +197,7 @@ final class GdCanvas implements Canvas
     private function colour(\GdImage $image, string $hex, float $opacity): int
     {
         [$r, $g, $b] = Geometry::rgb($hex);
-        $alpha = (int) round(127 * (1 - max(0.0, min(1.0, $opacity))));
+        $alpha = max(0, min(127, (int) round(127 * (1 - max(0.0, min(1.0, $opacity))))));
         $c = imagecolorallocatealpha($image, $r, $g, $b, $alpha);
         return $c === false ? 0 : $c;
     }

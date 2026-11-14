@@ -25,7 +25,7 @@ sudo apt-get install fonts-noto-core fonts-dejavu-core fonts-ipafont-gothic
 
 ```sh
 composer test      # PHPUnit
-composer analyse   # PHPStan, level 6
+composer analyse   # PHPStan, level 8
 composer lint      # PHP_CodeSniffer, PSR-12
 composer check     # all three
 ```

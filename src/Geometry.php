@@ -29,14 +29,22 @@ final class Geometry
     }
 
     /**
-     * @return array{0: int, 1: int, 2: int}
+     * @return array{0: int<0, 255>, 1: int<0, 255>, 2: int<0, 255>}
      */
     public static function rgb(string $hex): array
     {
         if (preg_match('/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/D', $hex, $m) !== 1) {
             return [0, 0, 0];
         }
-        return [(int) hexdec($m[1]), (int) hexdec($m[2]), (int) hexdec($m[3])];
+        return [self::byte($m[1]), self::byte($m[2]), self::byte($m[3])];
+    }
+
+    /**
+     * @return int<0, 255>
+     */
+    private static function byte(string $hex): int
+    {
+        return max(0, min(255, (int) hexdec($hex)));
     }
 
     /**

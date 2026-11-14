@@ -215,7 +215,11 @@ final class TextLayout
         $limit = max(1, $this->lineLimit($size, $boxHeight, $maxLines));
         $lines = $this->wrap($text, $font, $size, $boxWidth);
         $kept = array_slice($lines, 0, $limit);
-        $kept[$limit - 1] = $this->ellipsise($kept[$limit - 1] ?? '', $font, $size, $boxWidth);
+        if ($kept === []) {
+            $kept = [''];
+        }
+        $last = (string) array_pop($kept);
+        $kept[] = $this->ellipsise($last, $font, $size, $boxWidth);
         return new FittedText($size, $kept, $size * self::LINE_HEIGHT, true);
     }
 
@@ -349,6 +353,7 @@ final class TextLayout
 
         // Glue closing punctuation to the unit before it, and opening
         // punctuation to the unit after it.
+        /** @var list<array{string, bool}> $glued */
         $glued = [];
         $carry = null;
         foreach ($units as [$unit, $sp]) {
@@ -358,7 +363,8 @@ final class TextLayout
                 $carry = null;
             }
             if ($glued !== [] && !$sp && self::startsWithClosing($unit)) {
-                $glued[count($glued) - 1][0] .= $unit;
+                $previous = array_pop($glued);
+                $glued[] = [$previous[0] . $unit, $previous[1]];
                 continue;
             }
             if (self::isOpening($unit)) {
